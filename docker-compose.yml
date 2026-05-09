@@ -1,0 +1,198 @@
+version: '3.8'
+
+services:
+
+  # ─────────────────────────────────────────
+  # EUREKA SERVER
+  # ─────────────────────────────────────────
+  eureka-server:
+    build: ./eureka-server
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    networks:
+      - banking-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────────────────
+  # API GATEWAY
+  # ─────────────────────────────────────────
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - EUREKA_URI=http://eureka-server:8761/eureka/
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - banking-network
+
+  # ─────────────────────────────────────────
+  # AUTH SERVICE + DB
+  # ─────────────────────────────────────────
+  auth-db:
+    image: postgres:15-alpine
+    container_name: auth-db
+    environment:
+      POSTGRES_DB: authdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - auth-db-data:/var/lib/postgresql/data
+    networks:
+      - banking-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  auth-service:
+    build: ./auth-service
+    container_name: auth-service
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://auth-db:5432/authdb
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - EUREKA_URI=http://eureka-server:8761/eureka/
+      - JWT_SECRET=banking-system-secret-key-must-be-at-least-256-bits-long-for-hs256
+    depends_on:
+      auth-db:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - banking-network
+
+  # ─────────────────────────────────────────
+  # TRANSACTION SERVICE + DB
+  # ─────────────────────────────────────────
+  transaction-db:
+    image: postgres:15-alpine
+    container_name: transaction-db
+    environment:
+      POSTGRES_DB: transactiondb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - transaction-db-data:/var/lib/postgresql/data
+    networks:
+      - banking-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  transaction-service:
+    build: ./transaction-service
+    container_name: transaction-service
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://transaction-db:5432/transactiondb
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - EUREKA_URI=http://eureka-server:8761/eureka/
+    depends_on:
+      transaction-db:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - banking-network
+
+  # ─────────────────────────────────────────
+  # PAYMENT SERVICE + DB
+  # ─────────────────────────────────────────
+  payment-db:
+    image: postgres:15-alpine
+    container_name: payment-db
+    environment:
+      POSTGRES_DB: paymentdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - payment-db-data:/var/lib/postgresql/data
+    networks:
+      - banking-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  payment-service:
+    build: ./payment-service
+    container_name: payment-service
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://payment-db:5432/paymentdb
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - EUREKA_URI=http://eureka-server:8761/eureka/
+    depends_on:
+      payment-db:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - banking-network
+
+  # ─────────────────────────────────────────
+  # ADMIN SERVICE + DB
+  # ─────────────────────────────────────────
+  admin-db:
+    image: postgres:15-alpine
+    container_name: admin-db
+    environment:
+      POSTGRES_DB: admindb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - admin-db-data:/var/lib/postgresql/data
+    networks:
+      - banking-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  admin-service:
+    build: ./admin-service
+    container_name: admin-service
+    ports:
+      - "8084:8084"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://admin-db:5432/admindb
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - EUREKA_URI=http://eureka-server:8761/eureka/
+    depends_on:
+      admin-db:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - banking-network
+
+networks:
+  banking-network:
+    driver: bridge
+
+volumes:
+  auth-db-data:
+  transaction-db-data:
+  payment-db-data:
+  admin-db-data:

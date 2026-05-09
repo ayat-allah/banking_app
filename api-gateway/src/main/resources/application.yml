@@ -1,0 +1,57 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: auth-service
+          uri: lb://auth-service
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - StripPrefix=0
+
+        - id: transaction-service
+          uri: lb://transaction-service
+          predicates:
+            - Path=/api/transactions/**,/api/wallet/**
+          filters:
+            - StripPrefix=0
+            - name: JwtAuthFilter
+
+        - id: payment-service
+          uri: lb://payment-service
+          predicates:
+            - Path=/api/payments/**,/api/bank-accounts/**
+          filters:
+            - StripPrefix=0
+            - name: JwtAuthFilter
+
+        - id: admin-service
+          uri: lb://admin-service
+          predicates:
+            - Path=/api/admin/**
+          filters:
+            - StripPrefix=0
+            - name: JwtAuthFilter
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka-server:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+jwt:
+  secret: banking-system-secret-key-must-be-at-least-256-bits-long-for-hs256
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
