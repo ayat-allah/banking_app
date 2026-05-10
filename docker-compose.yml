@@ -187,6 +187,23 @@ services:
     networks:
       - banking-network
 
+  # ─────────────────────────────────────────
+  # FRONTEND SERVICE
+  # ─────────────────────────────────────────
+  frontend-service:
+    build: ./frontend-service
+    container_name: frontend-service
+    ports:
+      - "8085:8081"
+    environment:
+      - SERVER_PORT=8081
+      - EUREKA_URI=http://eureka-server:8761/eureka/
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - banking-network
+
 networks:
   banking-network:
     driver: bridge
