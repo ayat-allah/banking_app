@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Register - Nexus Bank</title>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(to right, #4facfe, #00f2fe);
+    }
+    .register-box {
+      background: white;
+      padding: 30px;
+      width: 340px;
+      border-radius: 16px;
+      box-shadow: 0 20px 35px rgba(0,0,0,0.2);
+      text-align: center;
+    }
+    h2 {
+      margin-bottom: 20px;
+      color: #0b2b5c;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(95deg, #4facfe, #00f2fe);
+      border: none;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 14px rgba(79,172,254,0.3);
+    }
+    #msg {
+      margin-top: 10px;
+      font-size: 14px;
+    }
+    a {
+      text-decoration: none;
+      color: #4facfe;
+      font-weight: bold;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="register-box">
+    <h2>📝 Open Account</h2>
+    <input type="text" id="name" placeholder="Full Name">
+    <input type="email" id="email" placeholder="Email address">
+    <input type="text" id="phone" placeholder="Phone Number">
+    <input type="password" id="password" placeholder="Create password (min 8 chars)">
+    <button onclick="register()">Register</button>
+    <div id="msg"></div>
+    <p>Already have an account? <a href="login.html">Login</a></p>
+  </div>
+
+  <script>
+    const API_BASE_URL = 'http://localhost:8080/api';
+
+    async function register() {
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      const password = document.getElementById('password').value;
+      const msg = document.getElementById('msg');
+      const btn = document.querySelector('button');
+
+      if (!name || !email || !phone || !password) {
+        msg.style.color = 'red';
+        msg.innerHTML = 'Please fill all fields';
+        return;
+      }
+
+      if (password.length < 8) {
+        msg.style.color = 'red';
+        msg.innerHTML = 'Password must be at least 8 characters';
+        return;
+      }
+
+      btn.innerHTML = 'Registering...';
+      btn.classList.add('loading');
+      msg.innerHTML = '';
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/register`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            name, 
+            email, 
+            phoneNumber: phone, 
+            password,
+            role: 'CUSTOMER'
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || 'Registration failed');
+        }
+
+        // Store token and user info
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('userId', data.userId);
+        localStorage.setItem('userName', data.name);
+        localStorage.setItem('userRole', data.role);
+        localStorage.setItem('userEmail', data.email);
+
+        msg.style.color = 'green';
+        msg.innerHTML = '✓ Registration successful! Redirecting to dashboard...';
+
+        setTimeout(() => {
+          window.location.href = 'user_dashboard.html';
+        }, 1000);
+
+      } catch (error) {
+        msg.style.color = 'red';
+        msg.innerHTML = error.message || 'Registration failed. Email or phone may already exist.';
+      } finally {
+        btn.innerHTML = 'Register';
+        btn.classList.remove('loading');
+      }
+    }
+  </script>
+</body>
+</html>
