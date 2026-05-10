@@ -9,7 +9,7 @@
         <version>1.0.0</version>
     </parent>
 
-    <artifactId>admin-service</artifactId>
+    <artifactId>frontend-service</artifactId>
 
     <dependencies>
         <dependency>
