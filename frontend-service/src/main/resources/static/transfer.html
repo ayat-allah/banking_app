@@ -66,34 +66,14 @@
 
     <input type="number" id="amount" placeholder="Amount">
 
-    <button onclick="transferMoney()">Send</button>
+    <button type="button" class="transfer-btn" onclick="transferMoney()">Send</button>
+    <button type="button" class="back-btn" onclick="goToDashboard()" style="margin-top:10px;">← Back to Dashboard</button>
 
     <div id="msg"></div>
 
   </div>
 
-  <script>
-
-    function transferMoney(){
-
-      let username = document.getElementById("username").value;
-      let amount = document.getElementById("amount").value;
-      let msg = document.getElementById("msg");
-
-      if(username === "" || amount === ""){
-
-        msg.style.color = "red";
-        msg.innerHTML = "Please fill all fields";
-
-        return;
-      }
-
-      msg.style.color = "green";
-      msg.innerHTML = "Transfer Successful ✔";
-
-    }
-
-  </script>
+  <script src="transfer.js"></script>
 
 </body>
 </html>
